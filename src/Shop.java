@@ -2,13 +2,15 @@ import java.io.*;
 import java.util.*;
 
 public class Shop {
+    private static final File memberFile = new File("src/data/member.txt");
+    private static final File productFile = new File("src/data/product.txt");
+    private static final File stockFile = new File("src/data/stock.txt");
+    private static final File arrivalFile = new File("src/data/arrival.txt");
+
     HashMap<Product, Integer> stock;
     ArrayList<Order> reservations;
     HashMap<String, Product> handledProducts;
     HashSet<Customer> memberList;
-    private static final File memberFile = new File("src/data/member.txt");
-    private static final File productFile = new File("src/data/product.txt");
-    private static final File stockFile = new File("src/data/stock.txt");
     Customer currentUser;
 
     public Shop() throws IOException {
@@ -21,7 +23,8 @@ public class Shop {
         this.initMemberList();
         this.initProductList();
         this.initStock();
-        // this.arrival();
+        this.mergeStock();
+
     }
 
     public void open() {
@@ -57,6 +60,7 @@ public class Shop {
     }
 
     public void close() throws IOException {
+        System.out.println(this.stock.toString());
         updateStock();
     }
 
@@ -178,6 +182,21 @@ public class Shop {
             int num = Integer.parseInt(s[1]);
             Product p = this.handledProducts.get(name);
             this.stock.put(p, num);
+            str = br.readLine();
+        }
+        br.close();
+    }
+
+    private void mergeStock() throws IOException{
+        BufferedReader br = new BufferedReader(new FileReader(arrivalFile));
+        String str = br.readLine();
+        while (str != null) {
+            String[] s = str.split(" ");
+            assert (s.length == 2);
+            String name = s[0];
+            int num = Integer.parseInt(s[1]);
+            Product p = this.handledProducts.get(name);
+            this.stock.merge(p, num, Integer::sum);
             str = br.readLine();
         }
         br.close();
