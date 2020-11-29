@@ -11,7 +11,11 @@ public class Order {
     }
 
     public void add(Product p, int num) {
-        this.orderList.put(p, num);
+        if(this.orderList.containsKey(p)){
+            this.orderList.merge(p, num, Integer::sum);
+        } else {
+            this.orderList.put(p, num);
+        }
     }
 
     public String toString() {

@@ -1,3 +1,5 @@
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.util.Scanner;
 
@@ -5,12 +7,15 @@ public class CUI {
 
     Scanner in;
     PrintWriter out;
-    PrintWriter err;
 
     public CUI() {
         in = new Scanner(System.in);
-        out = new PrintWriter(System.out);
-        err = new PrintWriter(System.err);
+        out = new PrintWriter(System.out, true);
+    }
+    
+    public void init(InputStream in, OutputStream out) {
+    	this.in = new Scanner(in);
+    	this.out = new PrintWriter(out, true); 
     }
 
     public String readStr(){
@@ -18,7 +23,6 @@ public class CUI {
         try {
             res = in.next();
         } catch (Exception e){
-            err.println("Read String error");
             return null;
         }
         return res;
@@ -29,7 +33,6 @@ public class CUI {
         try {
             res = in.nextInt();
         } catch (Exception e){
-            err.println("Not Int");
             return -1;
         }
         return res;
@@ -38,7 +41,6 @@ public class CUI {
     public void println(String s){
         out.println(s);
     }
-
 
     public boolean yesNo() {
         String ans = readStr().toLowerCase();
@@ -51,4 +53,11 @@ public class CUI {
         return new Pair<>(name, num);
     }
 
+    public Customer parseCustomer(){
+        String name = in.next();
+        int id = in.nextInt();
+        String password = in.next();
+
+        return new Customer(name, id, password);
+    }
 }

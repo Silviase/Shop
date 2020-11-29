@@ -68,18 +68,10 @@ public class Shop {
 
     private void logIn() {
         cui.println("大岡山酒店へようこそ！");
-        cui.println("名前を入力してください");
-        String name = cui.readStr();
-
-        cui.println("IDを入力してください[数字]");
-        int id = cui.readInt();
-
-        cui.println("パスワードを入力してください");
-        String password = cui.readStr();
-
-        Customer c = new Customer(name, id, password);
+        cui.println("名前・ID(数字)・パスワードを空白区切りで入力してください");
+        Customer c = cui.parseCustomer();
         if (ml.exists(c)) {
-            currentUser = c;
+            this.currentUser = c;
             return;
         }
 
@@ -97,14 +89,18 @@ public class Shop {
     private void receiveOrder() {
         cui.println("注文は何だ？");
         cui.println("[商品名 数量] のように入力してください");
-        cui.println("注文を終わる場合、何も入力せず改行してください");
+        cui.println("注文を終わる場合、[fin 0]と入力して改行してください");
 
         Order o = new Order(this.currentUser);
 
-        while (cui.in.hasNext()) {
+        while (true) {
             Pair<String, Integer> pair = cui.readStrInt();
             String name = pair.getT();
             int     num = pair.getU();
+
+            if(name.equals("fin") && num == 0) {
+                break;
+            }
 
             if (stock.isDealing(name)) {
                 Product product = stock.pl.getProductInfoFromName(name);
@@ -115,9 +111,11 @@ public class Shop {
             }
         }
 
-        if(o.containAgeVerifyProduct() || !verify()){
-            cui.println("すまんな、未成年には酒は売れねえんだ。");
-            return;
+        if(o.containAgeVerifyProduct()){
+            if(!verify()){
+                cui.println("すまんな、未成年には酒は売れねえんだ。");
+                return;
+            }
         }
 
         if (this.stock.isAvailable(o)) {
@@ -153,27 +151,23 @@ public class Shop {
     }
 
     private void initReservation() throws IOException {
-        BufferedReader br = new BufferedReader(new FileReader(reservationFile));
-        String str = br.readLine();
-        while (str != null) {
+        Scanner sc = new Scanner(new FileReader(reservationFile));
+        while (sc.hasNext()) {
             HashMap<Product, Integer> hs = new HashMap<>();
-            String[] s = str.split(" ");
-            int customerID = Integer.parseInt(s[0]);
-            int lineNum = Integer.parseInt(s[1]);
+            int customerID = sc.nextInt();
+            int lineNum = sc.nextInt();
 
             Customer c = this.ml.searchFromID(customerID);
             Order o = new Order(c);
             for (int i = 0; i < lineNum; i++) {
-                String nameNum = br.readLine();
-                String name = nameNum.split(" ")[0];
-                int num = Integer.parseInt(nameNum.split(" ")[1]);
+                String name = sc.next();
+                int num = sc.nextInt();
                 Product p = this.stock.pl.getProductInfoFromName(name);
                 o.add(p, num);
             }
             this.reservations.add(o);
-            str = br.readLine();
         }
-        br.close();
+        sc.close();
     }
 
     private void absorbReservation() {
