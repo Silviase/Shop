@@ -43,11 +43,7 @@ public class MemberList {
         return null;
     }
 
-    public void addMember(String name) {
-        Scanner sc = new Scanner(System.in);
-        System.out.println("パスワードを決めて下さい");
-        String password = sc.next();
-
+    public void addMember(String name, String password) {
         Customer nc = new Customer(name, this.generateID(), password);
         ml.add(nc);
         System.out.println("あなたは" + nc.toString() + "です。よく覚えておいてね。");

@@ -15,7 +15,7 @@ public class CUI {
     
     public void init(InputStream in, OutputStream out) {
     	this.in = new Scanner(in);
-    	this.out = new PrintWriter(out, true); 
+    	this.out = new PrintWriter(out, false);
     }
 
     public String readStr(){
