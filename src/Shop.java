@@ -2,229 +2,223 @@ import java.io.*;
 import java.util.*;
 
 public class Shop {
-    private static final File memberFile = new File("src/data/member.txt");
-    private static final File productFile = new File("src/data/product.txt");
-    private static final File stockFile = new File("src/data/stock.txt");
-    private static final File arrivalFile = new File("src/data/arrival.txt");
+    private static final File reservationFile   = new File("src/data/reservation.txt");
+    private static final File arrivalFile       = new File("src/data/arrival.txt");
 
-    HashMap<Product, Integer> stock;
-    ArrayList<Order> reservations;
-    HashMap<String, Product> handledProducts;
-    HashSet<Customer> memberList;
+    ArrayDeque<Order> reservations;
+    MemberList ml;
+    Stock stock;
     Customer currentUser;
+    CUI cui;
 
     public Shop() throws IOException {
-        this.stock = new HashMap<>();
-        this.reservations = new ArrayList<>();
-        this.handledProducts = new HashMap<>();
-        this.memberList = new HashSet<>();
+        this.reservations = new ArrayDeque<>();
+        this.ml = new MemberList();
+        this.stock = new Stock();
         this.currentUser = null;
+        this.cui = new CUI();
 
-        this.initMemberList();
-        this.initProductList();
-        this.initStock();
-        this.mergeStock();
-
+        this.ml.init();
+        this.stock.init();
+        this.dailyArrival();
+        this.initReservation();
+        this.reservationArrival();
     }
 
     public void open() {
-        boolean cont = true;
-        userLogin();
-        System.out.println("よぉ！" + this.currentUser.getName() + "！");
-        System.out.println("何か用かい？");
-        while(cont){
-            Scanner sc = new Scanner(System.in);
-            System.out.println("注文する            -----> 1");
-            System.out.println("登録情報を変更する  -----> 2");
-            System.out.println("特にない            -----> 0");
+        logIn();
+        cui.println("よぉ！" + this.currentUser.getName() + "！");
+        cui.println("何か用かい？");
 
-            int command = sc.nextInt();
-            switch (command){
+        boolean cont = true;
+        while (cont) {
+            cui.println("注文する              -----> 1");
+            cui.println("例のブツを取りに来た  -----> 2");
+            cui.println("特にない              -----> 0");
+
+            switch (cui.readInt()) {
                 case 0:
                     logOut();
                     cont = false;
                     break;
                 case 1:
                     receiveOrder();
-                    System.out.println("まだ何か用かい？");
+                    cui.println("まだ何か用かい？");
                     break;
                 case 2:
-                    modifyAccount();
-                    System.out.println("まだ何か用かい？");
+                    absorbReservation();
+                    cui.println("まだ何か用かい？");
                     break;
                 default:
-                    System.err.println("どうしたんだ？");
+                    cui.println("どうしたんだ？");
                     break;
             }
         }
     }
 
+
     public void close() throws IOException {
-        System.out.println(this.stock.toString());
-        updateStock();
+        cui.println("在庫はこんな感じです。");
+        cui.println(this.stock.remain.toString());
+        this.stock.update();
+        cui.println("予約はこんな感じです。");
+        cui.println(this.reservations.toString());
+        updateReservation();
     }
 
-    private void initMemberList() throws IOException {
-        BufferedReader br = new BufferedReader(new FileReader(memberFile));
-        String str = br.readLine();
-        while (str != null) {
-            String[] s = str.split(" ");
-            assert (s.length == 3);
-            this.memberList.add(new Customer(s[0], Integer.parseInt(s[1]), s[2]));
-            str = br.readLine();
-        }
-        br.close();
-    }
+    private void logIn() {
+        cui.println("大岡山酒店へようこそ！");
+        cui.println("名前を入力してください");
+        String name = cui.readStr();
 
-    private void userLogin() {
-        Scanner sc = new Scanner(System.in);
-        System.out.println("大岡山酒店へようこそ！");
-        System.out.println("名前を入力してください");
-        String name = sc.next();
-        System.out.println("IDを入力してください[数字]");
-        int id = sc.nextInt();
-        System.out.println("パスワードを入力してください");
-        String password = sc.next();
+        cui.println("IDを入力してください[数字]");
+        int id = cui.readInt();
+
+        cui.println("パスワードを入力してください");
+        String password = cui.readStr();
+
         Customer c = new Customer(name, id, password);
-        if(memberList.contains(c)){
+        if (ml.exists(c)) {
             currentUser = c;
             return;
         }
 
-        System.out.println("メンバーではないようです。");
-        System.out.println("今回はゲストユーザとしてログインしておきますね。");
+        cui.println("メンバーではないようです。");
+        cui.println("今回はゲストユーザとしてログインしておきますね。");
         this.currentUser = new Customer("guest", 1, "guest");
 
     }
 
     private void logOut() {
         this.currentUser = null;
-        System.out.println("まいど！");
+        cui.println("まいど！");
     }
 
-    private void initProductList() throws IOException {
-        BufferedReader br = new BufferedReader(new FileReader(productFile));
-        String str = br.readLine();
-        while (str != null) {
-            String[] s = str.split(" ");
-            assert (s.length == 2);
-            String name = s[0];
-            int price = Integer.parseInt(s[1]);
-            Product p = Product.productFactory(name, price);
-            this.handledProducts.put(name, p);
-            str = br.readLine();
-        }
-        br.close();
-    }
-
-    public void receiveOrder(){
-        System.out.println("注文は何だ？");
-        System.out.println("[商品名 数量] のように入力してください");
-        System.out.println("注文を終わる場合、何も入力せず改行してください");
-
-        Scanner sc = new Scanner(System.in);
-        String s = sc.nextLine();
+    private void receiveOrder() {
+        cui.println("注文は何だ？");
+        cui.println("[商品名 数量] のように入力してください");
+        cui.println("注文を終わる場合、何も入力せず改行してください");
 
         Order o = new Order(this.currentUser);
-        while(!s.equals("")){
-            String name = s.split(" ")[0];
-            int num = Integer.parseInt(s.split(" ")[1]);
 
-            if (validate(name)) {
-                o.add(this.handledProducts.get(name), num);
-                System.out.println("注文を受けたぜ");
+        while (cui.in.hasNext()) {
+            Pair<String, Integer> pair = cui.readStrInt();
+            String name = pair.getT();
+            int     num = pair.getU();
+
+            if (stock.isDealing(name)) {
+                Product product = stock.pl.getProductInfoFromName(name);
+                o.add(product, num);
+                cui.println("注文を受けたぜ");
             } else {
-                System.out.println("それは扱ってねぇんだ…すまんな。");
+                cui.println("それは扱ってねぇんだ…すまんな。");
             }
-            s = sc.nextLine();
         }
 
-        if (checkStock(o)) {
-            takeOut(o);
-            System.out.println("料金は" + o.getTotalPrice() + "円だ。");
-        }else{
-            System.out.println("すまんな、今切らしてるんだ。");
-            System.out.println("予約にはしっかり入れといたぜ。");
+        if(o.containAgeVerifyProduct() || !verify()){
+            cui.println("すまんな、未成年には酒は売れねえんだ。");
+            return;
+        }
+
+        if (this.stock.isAvailable(o)) {
+            this.stock.takeOut(o);
+            cui.println("料金は" + o.getTotalPrice() + "円だ。");
+        } else {
+            cui.println("すまんな、今切らしてるんだ。予約するか？[y/n]");
+            if(cui.yesNo()) {
+                this.reservations.add(o);
+                cui.println("予約にはしっかり入れといたぜ。また来いよ。");
+            } else {
+                cui.println("そうか、悪かったな。");
+            }
         }
 
     }
 
-    public void addMember(Customer c) throws IOException {
-        if(c.getCustomerID() == -1) {
-            // not generated
-            int newID = this.generateCustomerID();
-            c.setCustomerID(newID);
+    private void dailyArrival() throws IOException {
+        Scanner sc = new Scanner(new FileReader(arrivalFile));
+        while (sc.hasNext()) {
+            String name = sc.next();
+            int num     = sc.nextInt();
+            Product p   = this.stock.pl.getProductInfoFromName(name);
+            this.stock.arrival(p, num);
         }
-        this.memberList.add(c);
-        FileWriter wr = new FileWriter(memberFile);
-        wr.write(c.toString());
-        wr.write("\n");
-        wr.close();
+        sc.close();
     }
 
-    private int generateCustomerID() {
-        return this.memberList.size();
+    private void reservationArrival() {
+        for (Order o : this.reservations) {
+            stock.arrival(o);
+        }
     }
 
-    private boolean validate(String s) {
-        return this.handledProducts.containsKey(s);
-    }
-
-    private void modifyAccount() {}
-
-    private void initStock() throws IOException{
-        BufferedReader br = new BufferedReader(new FileReader(stockFile));
+    private void initReservation() throws IOException {
+        BufferedReader br = new BufferedReader(new FileReader(reservationFile));
         String str = br.readLine();
         while (str != null) {
+            HashMap<Product, Integer> hs = new HashMap<>();
             String[] s = str.split(" ");
-            assert (s.length == 2);
-            String name = s[0];
-            int num = Integer.parseInt(s[1]);
-            Product p = this.handledProducts.get(name);
-            this.stock.put(p, num);
+            int customerID = Integer.parseInt(s[0]);
+            int lineNum = Integer.parseInt(s[1]);
+
+            Customer c = this.ml.searchFromID(customerID);
+            Order o = new Order(c);
+            for (int i = 0; i < lineNum; i++) {
+                String nameNum = br.readLine();
+                String name = nameNum.split(" ")[0];
+                int num = Integer.parseInt(nameNum.split(" ")[1]);
+                Product p = this.stock.pl.getProductInfoFromName(name);
+                o.add(p, num);
+            }
+            this.reservations.add(o);
             str = br.readLine();
         }
         br.close();
     }
 
-    private void mergeStock() throws IOException{
-        BufferedReader br = new BufferedReader(new FileReader(arrivalFile));
-        String str = br.readLine();
-        while (str != null) {
-            String[] s = str.split(" ");
-            assert (s.length == 2);
-            String name = s[0];
-            int num = Integer.parseInt(s[1]);
-            Product p = this.handledProducts.get(name);
-            this.stock.merge(p, num, Integer::sum);
-            str = br.readLine();
-        }
-        br.close();
-    }
-
-    public boolean checkStock(Order o) {
-        for (Map.Entry<Product, Integer> e : o.orderList.entrySet()) {
-            if(this.stock.get(e.getKey()) < e.getValue()) {
-                return false;
+    private void absorbReservation() {
+        for (int i = 0; i < this.reservations.size(); i++) {
+            Order o = this.reservations.pollFirst();
+            if (!o.getCustomer().equals(this.currentUser)) {
+                this.reservations.addLast(o);
+                continue;
             }
+
+            if (this.stock.isAvailable(o)) {
+                cui.println("ブツは用意できてるぜ…");
+                cui.println("料金は" + o.getTotalPrice() + "円だ。");
+                this.stock.takeOut(o);
+            } else {
+                cui.println("…すまねぇ。まだ用意できてねぇんだ。");
+                cui.println("キャンセルするか？ [y/n]");
+                if (cui.yesNo()) {
+                    cui.println("わかった。取り消しておこう。");
+                } else {
+                    cui.println("わかった。もう一度予約しておこう。");
+                    this.reservations.addLast(o);
+                }
+            }
+            return;
         }
-        return true;
+        cui.println("悪いがお前の予約はないみたいだ…");
     }
 
-    public void takeOut(Order o) {
-        for (Map.Entry<Product, Integer> e : o.orderList.entrySet()) {
-            this.stock.merge(e.getKey(), -e.getValue(), Integer::sum);
-        }
-    }
-
-    private void updateStock() throws IOException {
-        FileWriter fw = new FileWriter(stockFile);
-
-        for (Map.Entry<Product, Integer> e : this.stock.entrySet()){
-            fw.write(e.getKey().getName() + " " + e.getValue() + "\n");
+    private void updateReservation() throws IOException {
+        FileWriter fw = new FileWriter(reservationFile);
+        fw.write("");
+        for (Order o : this.reservations) {
+            fw.write(o.getCustomer().getCustomerID() + " " + o.getOrderList().size() + "\n");
+            for (Map.Entry<Product, Integer> e : o.getOrderList().entrySet()) {
+                fw.write(e.getKey().getName() + " " + e.getValue() + "\n");
+            }
         }
 
         fw.close();
+    }
+
+    private boolean verify() {
+        cui.println("お前、20歳以上か？[y/n]");
+        return cui.yesNo();
     }
 
 }

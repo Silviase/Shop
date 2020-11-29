@@ -30,8 +30,25 @@ public class Order {
     public int getTotalPrice() {
         int res = 0;
         for (Map.Entry<Product, Integer> e : orderList.entrySet()) {
-			res += e.getKey().getPrice() * e.getValue();
+            res += e.getKey().getPrice() * e.getValue();
         }
         return res;
+    }
+
+    public HashMap<Product, Integer> getOrderList() {
+        return this.orderList;
+    }
+
+    public Customer getCustomer() {
+        return this.customer;
+    }
+
+    public boolean containAgeVerifyProduct() {
+        for (Product p : orderList.keySet()) {
+            if (p.needAgeVerify()) {
+                return true;
+            }
+        }
+        return false;
     }
 }

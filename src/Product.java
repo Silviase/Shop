@@ -1,14 +1,18 @@
 import java.util.Objects;
 
 public abstract class Product {
-	private String name;
-	private int price;
-	private boolean needAgeVerify;
+	private final String name;
+	private final int price;
+	private boolean ageVerify;
 	
 	public Product(String name, int price, boolean f) {
 		this.name = name;
 		this.price = price;
-		this.needAgeVerify = f;
+		this.ageVerify = f;
+	}
+
+	public boolean needAgeVerify(){
+		return this.ageVerify;
 	}
 	
 	public String getName(){
@@ -26,6 +30,8 @@ public abstract class Product {
 	public static Product productFactory(String name, int price){
 		if (name.contains("wine")){
 			return new Wine(name, price);
+		} if (name.contains("sake")){
+			return new Sake(name, price);
 		} else {
 			return new OtherProduct(name, price);
 		}

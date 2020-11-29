@@ -3,7 +3,7 @@ import java.util.Objects;
 public class Customer {
     // passwordをCustomer管理にする
     private final String name;
-    private int customerID;
+    private final int    customerID;
     private final String password;
 
 
@@ -17,8 +17,8 @@ public class Customer {
         return customerID;
     }
 
-    public void setCustomerID(int customerID) {
-        this.customerID = customerID;
+    public String getPassword(){
+        return this.password;
     }
 
     public String getName() {
@@ -27,10 +27,6 @@ public class Customer {
 
     public String toString() {
         return this.name + " " + this.customerID;
-    }
-
-    public String getPassword(){
-        return this.password;
     }
 
     @Override

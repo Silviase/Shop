@@ -1,3 +1,3 @@
-wine1 930
-sake1 220
-wine2 2070
+wine1 1010
+sake1 260
+wine2 2230

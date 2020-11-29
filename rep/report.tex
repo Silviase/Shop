@@ -1,0 +1,46 @@
+\documentclass[a4paper,11pt]{jsarticle}
+
+
+% 数式
+\usepackage{amsmath,amsfonts,amssymb}
+\usepackage{bm}
+% 画像
+\usepackage[dvipdfmx]{graphicx}
+\begin{document}
+
+\title{オブジェクト指向設計 最終課題レポート}
+\author{18B13863 前田 航希}
+\date{\today}
+\maketitle
+
+\newpage
+\tableofcontents
+\newpage
+
+\section{設計概要}
+
+予約・注文システムをCUIベースで実装した。
+基本となるShopクラスが在庫管理・予約管理・利用者管理を担い、
+客の入力を読み込んだ上で対応をする。
+
+\section{考察}
+\subsection{設計順序}
+
+設計についてまず考えたことは, Shopという一つのクラスが全体を統括することである。
+主にこのクラスは店独自のものであり、コマンドラインインターフェイスとして実装されることを期待していた。
+したがって、何らかの出力をする場合はこのクラスに存在するものであるとした。
+
+
+\subsection{設計の変更}
+\subsection{設計の難易度}
+\subsection{設計の選択肢}
+\subsection{要求の整理}
+\subsection{デザインパターンの使用}
+\subsection{単体テストの実行}
+\subsection{エラーハンドリング}
+\subsection{変更へのロバスト性}
+
+
+
+
+\end{document}
